@@ -556,6 +556,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.6em;
     line-height: 1.3;
     position: relative;
+    scroll-margin-top: 52px; /* top-bar(~37px) + padding */
 }
 h1 { font-size: 2em; margin-top: 0; padding-bottom: 0.3em; border-bottom: 1px solid var(--border-light); }
 h2 { font-size: 1.5em; padding-bottom: 0.2em; border-bottom: 1px solid var(--border-light); }
