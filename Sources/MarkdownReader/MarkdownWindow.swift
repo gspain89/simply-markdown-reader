@@ -69,9 +69,10 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         )
         w.minSize = NSSize(width: 480, height: 360)
         w.center()
-        w.tabbingMode = .automatic
+        w.tabbingMode = .preferred
         w.titlebarAppearsTransparent = false
         w.isReleasedWhenClosed = false
+        w.tabbingIdentifier = "MarkdownReaderTabs"
         self.window = w
 
         super.init()
@@ -186,6 +187,10 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
 
         setupFileWatcher(path: resolvedPath)
         listSiblingFiles(dir: baseDir)
+
+        // Update bookmark button state
+        let isBookmarked = Settings.shared.isBookmarked(resolvedPath)
+        webView.evaluateJavaScript("updateBookmarkState(\(isBookmarked));", completionHandler: nil)
     }
 
     private func setupFileWatcher(path: String) {
@@ -211,11 +216,51 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         guard let items = try? FileManager.default.contentsOfDirectory(atPath: dir) else { return }
         let mdFiles = items.filter { $0.hasSuffix(".md") || $0.hasSuffix(".markdown") || $0.hasSuffix(".mdx") }
             .sorted()
-            .map { $0.precomposedStringWithCanonicalMapping } // NFD → NFC for Korean
+            .map { $0.precomposedStringWithCanonicalMapping }
         guard let data = try? JSONSerialization.data(withJSONObject: mdFiles),
               let json = String(data: data, encoding: .utf8) else { return }
         let dirEscaped = escapeForJS(dir)
         webView.evaluateJavaScript("setSiblingFiles(\(json), \(dirEscaped));", completionHandler: nil)
+
+        // Also send folder tree
+        sendFolderTree(root: dir)
+    }
+
+    private func sendFolderTree(root: String) {
+        let fm = FileManager.default
+        let mdExts: Set<String> = ["md", "markdown", "mdown", "mkd", "mdx"]
+
+        func buildTree(at path: String, depth: Int) -> [String: Any]? {
+            guard depth < 4 else { return nil } // Limit depth to 4 levels
+            guard let items = try? fm.contentsOfDirectory(atPath: path) else { return nil }
+
+            var tree: [String: Any] = [:]
+            for item in items.sorted() {
+                let normalized = item.precomposedStringWithCanonicalMapping
+                if item.hasPrefix(".") { continue }
+                let fullPath = path + "/" + item
+                var isDir: ObjCBool = false
+                fm.fileExists(atPath: fullPath, isDirectory: &isDir)
+
+                if isDir.boolValue {
+                    if let subtree = buildTree(at: fullPath, depth: depth + 1), !subtree.isEmpty {
+                        tree[normalized] = subtree
+                    }
+                } else {
+                    let ext = URL(fileURLWithPath: item).pathExtension.lowercased()
+                    if mdExts.contains(ext) {
+                        tree[normalized] = true
+                    }
+                }
+            }
+            return tree.isEmpty ? nil : tree
+        }
+
+        guard let tree = buildTree(at: root, depth: 0) else { return }
+        guard let data = try? JSONSerialization.data(withJSONObject: tree),
+              let json = String(data: data, encoding: .utf8) else { return }
+        let rootEscaped = escapeForJS(root)
+        webView.evaluateJavaScript("setFolderTree(\(json), \(rootEscaped));", completionHandler: nil)
     }
 
     // MARK: - Navigation
@@ -324,6 +369,9 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
                 }
             }
 
+            // Send bookmarks to sidebar
+            self.sendBookmarks()
+
             // Restore scroll position
             if let path = self.filePath, Settings.shared.rememberScroll {
                 let pos = Settings.shared.scrollPosition(for: path)
@@ -379,6 +427,14 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             exportPDF()
         case "share":
             shareDocument()
+        case "requestFolderTree":
+            if let dir = body["path"] as? String {
+                sendFolderTree(root: dir)
+            }
+        case "toggleBookmark":
+            toggleBookmark()
+        case "requestBookmarks":
+            sendBookmarks()
         case "log":
             if let msg = body["message"] as? String {
                 NSLog("WebView: %@", msg)
@@ -421,6 +477,23 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         // Show from the export button area (top-right of window)
         let toolbarFrame = NSRect(x: window.frame.width - 80, y: window.frame.height - 40, width: 1, height: 1)
         picker.show(relativeTo: toolbarFrame, of: webView, preferredEdge: .minY)
+    }
+
+    // MARK: - Bookmarks
+
+    private func toggleBookmark() {
+        guard let path = filePath else { return }
+        let isBookmarked = Settings.shared.toggleBookmark(path)
+        webView.evaluateJavaScript("updateBookmarkState(\(isBookmarked));", completionHandler: nil)
+        sendBookmarks()
+    }
+
+    private func sendBookmarks() {
+        let bookmarks = Settings.shared.bookmarks
+            .map { $0.precomposedStringWithCanonicalMapping }
+        guard let data = try? JSONSerialization.data(withJSONObject: bookmarks),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("setBookmarks(\(json));", completionHandler: nil)
     }
 
     // MARK: - Helpers

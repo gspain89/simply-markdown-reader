@@ -81,6 +81,30 @@ final class Settings {
         set { defaults.set(newValue, forKey: "enableHighlight"); notify() }
     }
 
+    // MARK: - Bookmarks
+
+    var bookmarks: [String] {
+        get { defaults.stringArray(forKey: "bookmarks") ?? [] }
+        set { defaults.set(newValue, forKey: "bookmarks"); notify() }
+    }
+
+    func toggleBookmark(_ path: String) -> Bool {
+        var list = bookmarks
+        if let idx = list.firstIndex(of: path) {
+            list.remove(at: idx)
+            bookmarks = list
+            return false
+        } else {
+            list.insert(path, at: 0)
+            bookmarks = list
+            return true
+        }
+    }
+
+    func isBookmarked(_ path: String) -> Bool {
+        bookmarks.contains(path)
+    }
+
     // MARK: - Recent files
 
     var recentFiles: [String] {

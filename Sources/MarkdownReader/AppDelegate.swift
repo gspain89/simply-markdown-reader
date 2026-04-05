@@ -47,6 +47,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let wc = MarkdownWindowController(filePath: path)
         windowControllers.append(wc)
+
+        // Add as tab to existing window if one exists
+        if let existingWindow = windowControllers.first(where: { $0 !== wc })?.window {
+            existingWindow.addTabbedWindow(wc.window, ordered: .above)
+        }
         wc.window.makeKeyAndOrderFront(nil)
     }
 
@@ -102,6 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editMenu.addItem(.separator())
         editMenu.addItem(withTitle: "Find…", action: #selector(performFind), keyEquivalent: "f")
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: "Toggle Bookmark", action: #selector(toggleBookmark), keyEquivalent: "d")
         editMenuItem.submenu = editMenu
         mainMenu.addItem(editMenuItem)
 
@@ -199,9 +206,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func closeWindow() { NSApp.keyWindow?.close() }
     @objc private func performFind() {
         activeWindowController()?.webView.evaluateJavaScript(
-            "window.find('');", completionHandler: nil)
+            "openSearch();", completionHandler: nil)
     }
 
+    @objc private func toggleBookmark() {
+        activeWindowController()?.webView.evaluateJavaScript("sendToSwift('toggleBookmark');", completionHandler: nil)
+    }
     @objc private func toggleTOC() { activeWindowController()?.toggleTOC() }
     @objc private func toggleSource() { activeWindowController()?.toggleSource() }
     @objc private func zoomIn() { activeWindowController()?.zoomIn() }

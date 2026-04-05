@@ -165,6 +165,112 @@ body {
 .tb-btn.active { background: var(--accent-light); color: var(--accent); }
 .tb-btn svg { width: 16px; height: 16px; }
 .tb-sep { width: 1px; height: 16px; background: var(--border-light); margin: 0 4px; }
+.tb-font-size {
+    font-family: var(--code-font); font-size: 11px; color: var(--text-tertiary);
+    min-width: 30px; text-align: center; user-select: none;
+}
+
+/* ============================================================
+   Search Bar
+   ============================================================ */
+.search-bar {
+    position: sticky; top: 37px; z-index: 150;
+    background: var(--bg-secondary); border-bottom: 1px solid var(--border-light);
+    padding: 6px 12px;
+    animation: slideDown 0.15s ease;
+}
+body.toc-visible .search-bar { margin-left: 260px; }
+.search-inner {
+    display: flex; align-items: center; gap: 6px;
+    max-width: 480px; margin: 0 auto;
+    background: var(--bg-primary); border: 1px solid var(--border-medium);
+    border-radius: 8px; padding: 4px 8px;
+}
+.search-icon { width: 14px; height: 14px; color: var(--text-tertiary); flex-shrink: 0; }
+.search-bar input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: var(--heading-font); font-size: 13px; color: var(--text-primary);
+    padding: 4px 0; min-width: 0;
+}
+.search-bar input::placeholder { color: var(--text-tertiary); }
+.search-count {
+    font-family: var(--heading-font); font-size: 11px; color: var(--text-tertiary);
+    white-space: nowrap; flex-shrink: 0;
+}
+.search-nav-btn {
+    width: 24px; height: 24px; border: none; background: transparent;
+    border-radius: 4px; cursor: pointer; color: var(--text-secondary);
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    padding: 0;
+}
+.search-nav-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.search-close-btn {
+    width: 24px; height: 24px; border: none; background: transparent;
+    border-radius: 4px; cursor: pointer; color: var(--text-secondary);
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    padding: 0; line-height: 1;
+}
+.search-close-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* Search highlights */
+mark.search-hl {
+    background: var(--accent-light); color: inherit;
+    border-radius: 2px; padding: 1px 0;
+}
+mark.search-hl.current {
+    background: var(--accent); color: white;
+}
+
+/* ============================================================
+   Frontmatter Bar
+   ============================================================ */
+.frontmatter-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 10px 14px; margin-bottom: 20px;
+    background: var(--bg-secondary); border: 1px solid var(--border-light);
+    border-radius: 8px; font-family: var(--heading-font); font-size: 12px;
+}
+.fm-title {
+    font-weight: 600; font-size: 13px; color: var(--text-primary);
+    width: 100%; margin-bottom: 2px;
+}
+.fm-meta {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--text-secondary);
+}
+.fm-meta svg { color: var(--text-tertiary); }
+.fm-tag {
+    display: inline-block; padding: 2px 8px;
+    background: var(--accent-light); color: var(--accent);
+    border-radius: 4px; font-size: 11px; font-weight: 500;
+}
+.fm-category {
+    background: var(--bg-tertiary); color: var(--text-secondary);
+}
+.fm-status {
+    display: inline-block; padding: 2px 8px;
+    background: var(--bg-tertiary); color: var(--text-secondary);
+    border-radius: 4px; font-size: 11px; font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* ============================================================
+   Folder Tree
+   ============================================================ */
+.toc-list a.tree-dir {
+    font-weight: 500; color: var(--text-secondary);
+    cursor: pointer;
+}
+.toc-list a.tree-dir:hover { color: var(--text-primary); }
+.tree-arrow { font-size: 10px; display: inline-block; width: 10px; }
+.toc-list a.tree-file { color: var(--text-secondary); }
+.toc-list a.tree-file.current-file { color: var(--accent); font-weight: 600; }
+
+/* Bookmark path in sidebar */
+.bookmark-path {
+    display: block; font-size: 10px; color: var(--text-tertiary);
+    margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 /* ============================================================
    Export Popover
@@ -794,13 +900,15 @@ img.zoomable:hover { transform: scale(1.01); }
 
     .progress-bar,
     .top-bar,
+    .search-bar,
     .toc-sidebar,
     .status-bar,
     .code-copy-btn,
     .heading-anchor,
     .image-overlay,
     .settings-overlay,
-    .export-popover { display: none !important; }
+    .export-popover,
+    .frontmatter-bar { display: none !important; }
 
     .content-wrapper { margin-left: 0 !important; }
     .content { max-width: none; padding: 0; }

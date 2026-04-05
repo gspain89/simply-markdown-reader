@@ -20,13 +20,17 @@
     <div id="top-bar" class="top-bar">
         <div id="breadcrumb" class="breadcrumb-path"></div>
         <div class="toolbar">
-            <button class="tb-btn" onclick="sendToSwift('goBack')" title="Back (⌘[)">
-                <svg viewBox="0 0 16 16"><polyline points="10,2 4,8 10,14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <button class="tb-btn" id="btn-zoom-out" onclick="changeFontSizeFromToolbar(-1)" title="Zoom Out (⌘-)">
+                <svg viewBox="0 0 16 16"><text x="50%" y="52%" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">A</text><line x1="11" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
-            <button class="tb-btn" onclick="sendToSwift('goForward')" title="Forward (⌘])">
-                <svg viewBox="0 0 16 16"><polyline points="6,2 12,8 6,14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="tb-font-size" id="tb-font-size">16px</span>
+            <button class="tb-btn" id="btn-zoom-in" onclick="changeFontSizeFromToolbar(1)" title="Zoom In (⌘+)">
+                <svg viewBox="0 0 16 16"><text x="50%" y="52%" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-family="-apple-system,sans-serif" font-size="14" font-weight="600">A</text><line x1="11" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12.5" y1="10.5" x2="12.5" y2="13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
             <span class="tb-sep"></span>
+            <button class="tb-btn" id="btn-bookmark" onclick="sendToSwift('toggleBookmark')" title="Bookmark (⌘D)">
+                <svg viewBox="0 0 16 16"><path d="M4,2 L12,2 L12,14 L8,11 L4,14 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            </button>
             <button class="tb-btn" id="btn-toc" onclick="toggleTOCFromToolbar()" title="Table of Contents (⌘⇧T)">
                 <svg viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="12" x2="10" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
@@ -58,10 +62,26 @@
         </div>
     </div>
 
+    <!-- Search bar -->
+    <div id="search-bar" class="search-bar" style="display:none">
+        <div class="search-inner">
+            <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input id="search-input" type="text" placeholder="Search…" autocomplete="off" spellcheck="false">
+            <span id="search-count" class="search-count"></span>
+            <button class="search-nav-btn" onclick="searchNav(-1)" title="Previous (⇧Enter)">&#x25B2;</button>
+            <button class="search-nav-btn" onclick="searchNav(1)" title="Next (Enter)">&#x25BC;</button>
+            <button class="search-close-btn" onclick="closeSearch()">&times;</button>
+        </div>
+    </div>
+
     <!-- TOC Sidebar -->
     <aside id="toc-sidebar" class="toc-sidebar">
         <div class="toc-header"><span class="toc-title">Table of Contents</span></div>
         <nav id="toc-list" class="toc-list"></nav>
+        <div id="bookmark-section" class="file-list-section" style="display:none">
+            <div class="toc-header"><span class="toc-title">Bookmarks</span></div>
+            <nav id="bookmark-list" class="toc-list"></nav>
+        </div>
         <div id="file-list-section" class="file-list-section" style="display:none">
             <div class="toc-header"><span class="toc-title">Files</span></div>
             <nav id="file-list" class="toc-list"></nav>

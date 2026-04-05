@@ -99,11 +99,15 @@ function render(markdown, filePath, baseDir) {
     state.baseDir = baseDir;
     state.isSourceView = false;
 
+    // Parse frontmatter before stripping
+    var meta = parseFrontmatter(markdown);
+    var fmHtml = renderFrontmatter(meta);
+
     // Strip YAML frontmatter
     const content = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 
     const html = marked.parse(content);
-    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').innerHTML = fmHtml + html;
 
     generateTOC();
     updateBreadcrumb(filePath);
@@ -116,11 +120,13 @@ function render(markdown, filePath, baseDir) {
 // Called on file-change auto-reload (preserves scroll position)
 function reloadContent(markdown) {
     state.rawMarkdown = markdown;
-    if (state.isSourceView) return; // don't reload source view
+    if (state.isSourceView) return;
 
     const scrollY = window.scrollY;
+    var meta = parseFrontmatter(markdown);
+    var fmHtml = renderFrontmatter(meta);
     const content = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
-    document.getElementById('content').innerHTML = marked.parse(content);
+    document.getElementById('content').innerHTML = fmHtml + marked.parse(content);
 
     generateTOC();
     updateWordCount(content);
@@ -531,11 +537,7 @@ document.addEventListener('click', function(e) {
 // Keyboard shortcuts
 // ============================================================
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeImageOverlay();
-    }
-});
+/* Escape key handled in search section below */
 
 // ============================================================
 // System dark mode change listener
@@ -695,8 +697,8 @@ function buildSettingsHTML(s) {
         var sel = s.fontFamily === f.key ? ' selected' : '';
         h += '<div class="font-card' + sel + '" data-font="' + f.key + '" onclick="pickFont(\'' + f.key + '\')">';
         h += '<div class="font-card-name"><span class="dot"></span> ' + escapeHtml(f.name) + '</div>';
-        h += '<div class="font-card-sample" style="font-family:' + f.en + '">The quick brown fox jumps over the lazy dog</div>';
-        h += '<div class="font-card-sample-kr" style="font-family:' + f.kr + '">\uB2E4\uB78C\uC950 \uD5CC \uCCB3\uBC14\uD034\uC5D0 \uD0C0\uACE0\uD30C</div>';
+        h += '<div class="font-card-sample" style="font-family:' + f.en + '">Reading makes a full man, writing an exact man.</div>';
+        h += '<div class="font-card-sample-kr" style="font-family:' + f.kr + '">\uAE00\uC744 \uC77D\uB294 \uC990\uAC70\uC6C0\uC740 \uC0C8\uB85C\uC6B4 \uC138\uACC4\uB97C \uC5EC\uB294 \uBB38\uACFC \uAC19\uC2B5\uB2C8\uB2E4.</div>';
         h += '<div class="font-card-meta">' + f.meta + '</div>';
         h += '</div>';
     });
@@ -788,4 +790,326 @@ applySettings = function(s) {
     // Update TOC toolbar button state
     var tocBtn = document.getElementById('btn-toc');
     if (tocBtn) tocBtn.classList.toggle('active', !!s.showTOC);
+    // Update toolbar font size display
+    var tbSz = document.getElementById('tb-font-size');
+    if (tbSz && s.fontSize) tbSz.textContent = s.fontSize + 'px';
 };
+
+// ============================================================
+// Toolbar font size controls
+// ============================================================
+
+function changeFontSizeFromToolbar(delta) {
+    var sz = Math.max(12, Math.min(28, (currentSettings.fontSize || 16) + delta));
+    currentSettings.fontSize = sz;
+    sendToSwift('updateSetting', { key: 'fontSize', value: sz });
+    var tbSz = document.getElementById('tb-font-size');
+    if (tbSz) tbSz.textContent = sz + 'px';
+    // Also update settings panel if open
+    var el = document.getElementById('sz-val');
+    if (el) el.textContent = sz + 'px';
+}
+
+// ============================================================
+// In-app Search (Cmd+F)
+// ============================================================
+
+var searchState = { marks: [], current: -1 };
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageOverlay();
+        closeSearch();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        openSearch();
+    }
+});
+
+function openSearch() {
+    var bar = document.getElementById('search-bar');
+    bar.style.display = '';
+    var input = document.getElementById('search-input');
+    input.focus();
+    input.select();
+}
+
+function closeSearch() {
+    document.getElementById('search-bar').style.display = 'none';
+    clearHighlights();
+    searchState.marks = [];
+    searchState.current = -1;
+    document.getElementById('search-count').textContent = '';
+    document.getElementById('search-input').value = '';
+}
+
+function clearHighlights() {
+    document.querySelectorAll('mark.search-hl').forEach(function(m) {
+        var parent = m.parentNode;
+        parent.replaceChild(document.createTextNode(m.textContent), m);
+        parent.normalize();
+    });
+}
+
+function doSearch(query) {
+    clearHighlights();
+    searchState.marks = [];
+    searchState.current = -1;
+
+    if (!query || query.length < 1) {
+        document.getElementById('search-count').textContent = '';
+        return;
+    }
+
+    var contentEl = document.getElementById('content');
+    highlightMatches(contentEl, query.toLowerCase());
+    searchState.marks = Array.from(document.querySelectorAll('mark.search-hl'));
+
+    var countEl = document.getElementById('search-count');
+    if (searchState.marks.length > 0) {
+        searchState.current = 0;
+        searchState.marks[0].classList.add('current');
+        searchState.marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        countEl.textContent = '1 / ' + searchState.marks.length;
+    } else {
+        countEl.textContent = query.length > 0 ? 'No results' : '';
+    }
+}
+
+function highlightMatches(node, query) {
+    if (node.nodeType === 3) { // Text node
+        var text = node.textContent;
+        var lower = text.toLowerCase();
+        var idx = lower.indexOf(query);
+        if (idx === -1) return;
+
+        var frag = document.createDocumentFragment();
+        var lastIdx = 0;
+        while (idx !== -1) {
+            if (idx > lastIdx) frag.appendChild(document.createTextNode(text.substring(lastIdx, idx)));
+            var mark = document.createElement('mark');
+            mark.className = 'search-hl';
+            mark.textContent = text.substring(idx, idx + query.length);
+            frag.appendChild(mark);
+            lastIdx = idx + query.length;
+            idx = lower.indexOf(query, lastIdx);
+        }
+        if (lastIdx < text.length) frag.appendChild(document.createTextNode(text.substring(lastIdx)));
+        node.parentNode.replaceChild(frag, node);
+    } else if (node.nodeType === 1 && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE' && node.tagName !== 'MARK') {
+        // Copy childNodes to avoid mutation issues during iteration
+        var children = Array.from(node.childNodes);
+        for (var i = 0; i < children.length; i++) {
+            highlightMatches(children[i], query);
+        }
+    }
+}
+
+function searchNav(dir) {
+    if (searchState.marks.length === 0) return;
+    searchState.marks[searchState.current].classList.remove('current');
+    searchState.current = (searchState.current + dir + searchState.marks.length) % searchState.marks.length;
+    searchState.marks[searchState.current].classList.add('current');
+    searchState.marks[searchState.current].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('search-count').textContent = (searchState.current + 1) + ' / ' + searchState.marks.length;
+}
+
+// Debounced search on input
+(function() {
+    var timer = null;
+    document.addEventListener('input', function(e) {
+        if (e.target.id !== 'search-input') return;
+        clearTimeout(timer);
+        timer = setTimeout(function() { doSearch(e.target.value); }, 200);
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.target.id !== 'search-input') return;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchNav(e.shiftKey ? -1 : 1);
+        }
+    });
+})();
+
+// ============================================================
+// Frontmatter parsing & display
+// ============================================================
+
+function parseFrontmatter(markdown) {
+    var match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+    if (!match) return null;
+
+    var meta = {};
+    var lines = match[1].split('\n');
+    var currentKey = null;
+
+    lines.forEach(function(line) {
+        // Simple YAML key: value parser
+        var kv = line.match(/^(\w[\w\s-]*?):\s*(.*)$/);
+        if (kv) {
+            currentKey = kv[1].trim().toLowerCase();
+            var val = kv[2].trim();
+            // Array notation: [a, b, c]
+            if (val.startsWith('[') && val.endsWith(']')) {
+                meta[currentKey] = val.slice(1, -1).split(',').map(function(s) { return s.trim().replace(/^["']|["']$/g, ''); });
+            } else if (val) {
+                meta[currentKey] = val.replace(/^["']|["']$/g, '');
+            }
+        } else if (currentKey && line.match(/^\s+-\s+(.+)/)) {
+            // YAML list item
+            var item = line.match(/^\s+-\s+(.+)/)[1].trim().replace(/^["']|["']$/g, '');
+            if (!Array.isArray(meta[currentKey])) meta[currentKey] = [];
+            meta[currentKey].push(item);
+        }
+    });
+
+    return Object.keys(meta).length > 0 ? meta : null;
+}
+
+function renderFrontmatter(meta) {
+    if (!meta) return '';
+
+    var html = '<div class="frontmatter-bar">';
+    var displayed = false;
+
+    if (meta.title) {
+        html += '<span class="fm-title">' + escapeHtml(meta.title) + '</span>';
+        displayed = true;
+    }
+
+    if (meta.date) {
+        html += '<span class="fm-meta"><svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="3" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="1" x2="5" y2="4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="11" y1="1" x2="11" y2="4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> ' + escapeHtml(meta.date) + '</span>';
+        displayed = true;
+    }
+
+    if (meta.author) {
+        var author = Array.isArray(meta.author) ? meta.author.join(', ') : meta.author;
+        html += '<span class="fm-meta"><svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2,14 C2,10 5,9 8,9 C11,9 14,10 14,14" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> ' + escapeHtml(author) + '</span>';
+        displayed = true;
+    }
+
+    if (meta.tags) {
+        var tags = Array.isArray(meta.tags) ? meta.tags : [meta.tags];
+        tags.forEach(function(tag) {
+            html += '<span class="fm-tag">' + escapeHtml(tag) + '</span>';
+        });
+        displayed = true;
+    }
+
+    if (meta.category) {
+        html += '<span class="fm-tag fm-category">' + escapeHtml(meta.category) + '</span>';
+        displayed = true;
+    }
+
+    if (meta.status) {
+        html += '<span class="fm-status">' + escapeHtml(meta.status) + '</span>';
+        displayed = true;
+    }
+
+    html += '</div>';
+    return displayed ? html : '';
+}
+
+// ============================================================
+// Folder tree sidebar
+// ============================================================
+
+var folderTreeState = { root: '', expanded: {} };
+
+function setFolderTree(tree, rootDir) {
+    folderTreeState.root = rootDir;
+
+    var section = document.getElementById('file-list-section');
+    var list = document.getElementById('file-list');
+
+    // Change header to "Files"
+    section.style.display = '';
+    list.innerHTML = renderFolderNode(tree, rootDir, 0);
+}
+
+function renderFolderNode(node, currentPath, depth) {
+    var html = '';
+    if (!node) return html;
+
+    // Sort: folders first, then files
+    var entries = Object.keys(node).sort(function(a, b) {
+        var aIsDir = typeof node[a] === 'object' && node[a] !== null;
+        var bIsDir = typeof node[b] === 'object' && node[b] !== null;
+        if (aIsDir && !bIsDir) return -1;
+        if (!aIsDir && bIsDir) return 1;
+        return a.localeCompare(b);
+    });
+
+    entries.forEach(function(name) {
+        var fullPath = currentPath + '/' + name;
+        var value = node[name];
+        var indent = depth * 16;
+
+        if (typeof value === 'object' && value !== null) {
+            // Directory
+            var isExpanded = folderTreeState.expanded[fullPath];
+            var arrow = isExpanded ? '\u25BE' : '\u25B8';
+            html += '<a class="tree-dir" style="padding-left:' + (16 + indent) + 'px" onclick="toggleFolderNode(\'' + escapeAttr(fullPath) + '\')">';
+            html += '<span class="tree-arrow">' + arrow + '</span> ' + escapeHtml(name) + '</a>';
+            if (isExpanded) {
+                html += renderFolderNode(value, fullPath, depth + 1);
+            }
+        } else {
+            // File
+            var isCurrent = state.filePath === fullPath;
+            var cls = isCurrent ? 'tree-file current-file' : 'tree-file';
+            html += '<a class="' + cls + '" style="padding-left:' + (30 + indent) + 'px" onclick="sendToSwift(\'openFile\',{path:\'' + escapeAttr(fullPath) + '\'})">';
+            html += escapeHtml(name) + '</a>';
+        }
+    });
+
+    return html;
+}
+
+function toggleFolderNode(path) {
+    folderTreeState.expanded[path] = !folderTreeState.expanded[path];
+    sendToSwift('requestFolderTree', { path: folderTreeState.root });
+}
+
+// ============================================================
+// Bookmarks
+// ============================================================
+
+function updateBookmarkState(isBookmarked) {
+    var btn = document.getElementById('btn-bookmark');
+    if (!btn) return;
+    btn.classList.toggle('active', isBookmarked);
+    // Fill the bookmark icon when active
+    var path = btn.querySelector('path');
+    if (path) {
+        path.setAttribute('fill', isBookmarked ? 'currentColor' : 'none');
+    }
+}
+
+function setBookmarks(bookmarks) {
+    var section = document.getElementById('bookmark-section');
+    var list = document.getElementById('bookmark-list');
+    list.innerHTML = '';
+
+    if (!bookmarks || bookmarks.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = '';
+    bookmarks.forEach(function(fullPath) {
+        var parts = fullPath.split('/');
+        var name = parts.pop();
+        var dir = parts.slice(-2).join('/');
+
+        var a = document.createElement('a');
+        a.className = state.filePath === fullPath ? 'current-file' : '';
+        a.innerHTML = escapeHtml(name) + '<span class="bookmark-path">' + escapeHtml(dir) + '</span>';
+        a.onclick = function(e) {
+            e.preventDefault();
+            sendToSwift('openFile', { path: fullPath });
+        };
+        list.appendChild(a);
+    });
+}
