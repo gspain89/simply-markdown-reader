@@ -167,7 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
-        SettingsWindowController.show()
+        activeWindowController()?.openSettingsPanel()
     }
 
     @objc private func openFile() {

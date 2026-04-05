@@ -365,6 +365,20 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             if let dir = body["path"] as? String {
                 listSiblingFiles(dir: dir)
             }
+        case "updateSetting":
+            if let key = body["key"] as? String, let value = body["value"] {
+                updateSettingFromJS(key: key, value: value)
+            }
+        case "toggleTOC":
+            toggleTOC()
+        case "goBack":
+            goBack()
+        case "goForward":
+            goForward()
+        case "exportPDF":
+            exportPDF()
+        case "share":
+            shareDocument()
         case "log":
             if let msg = body["message"] as? String {
                 NSLog("WebView: %@", msg)
@@ -372,6 +386,41 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         default:
             break
         }
+    }
+
+    // MARK: - Settings from JS
+
+    private func updateSettingFromJS(key: String, value: Any) {
+        let s = Settings.shared
+        switch key {
+        case "theme":       if let v = value as? String { s.theme = v }
+        case "fontFamily":  if let v = value as? String { s.fontFamily = v }
+        case "fontSize":    if let v = value as? Int { s.fontSize = v }
+        case "contentWidth": if let v = value as? String { s.contentWidth = v }
+        case "autoReload":  if let v = value as? Bool { s.autoReload = v }
+        case "rememberScroll": if let v = value as? Bool { s.rememberScroll = v }
+        case "showTOC":     if let v = value as? Bool { s.showTOC = v }
+        case "showBreadcrumb": if let v = value as? Bool { s.showBreadcrumb = v }
+        case "showWordCount": if let v = value as? Bool { s.showWordCount = v }
+        case "showProgress": if let v = value as? Bool { s.showProgress = v }
+        case "enableMermaid": if let v = value as? Bool { s.enableMermaid = v }
+        case "enableKatex":  if let v = value as? Bool { s.enableKatex = v }
+        case "enableHighlight": if let v = value as? Bool { s.enableHighlight = v }
+        default: break
+        }
+    }
+
+    func openSettingsPanel() {
+        webView.evaluateJavaScript("toggleSettingsPanel();", completionHandler: nil)
+    }
+
+    func shareDocument() {
+        guard let path = filePath else { return }
+        let url = URL(fileURLWithPath: path)
+        let picker = NSSharingServicePicker(items: [url])
+        // Show from the export button area (top-right of window)
+        let toolbarFrame = NSRect(x: window.frame.width - 80, y: window.frame.height - 40, width: 1, height: 1)
+        picker.show(relativeTo: toolbarFrame, of: webView, preferredEdge: .minY)
     }
 
     // MARK: - Helpers

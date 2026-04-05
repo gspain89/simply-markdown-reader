@@ -577,3 +577,215 @@ function sendToSwift(type, data) {
         console.log('Swift bridge unavailable:', type, data);
     }
 }
+
+// ============================================================
+// Toolbar actions
+// ============================================================
+
+function toggleTOCFromToolbar() {
+    sendToSwift('toggleTOC');
+}
+
+// ============================================================
+// Export popover
+// ============================================================
+
+function toggleExportPopover(event) {
+    var pop = document.getElementById('export-popover');
+    if (pop.style.display !== 'none') { pop.style.display = 'none'; return; }
+
+    var btn = document.getElementById('btn-export');
+    var r = btn.getBoundingClientRect();
+    pop.style.display = '';
+    pop.style.top = (r.bottom + 6) + 'px';
+    pop.style.right = (window.innerWidth - r.right) + 'px';
+    pop.style.left = 'auto';
+
+    // Close on outside click
+    setTimeout(function() {
+        document.addEventListener('click', closeExportOnOutside, { once: true });
+    }, 0);
+}
+function closeExportOnOutside(e) {
+    var pop = document.getElementById('export-popover');
+    if (!pop.contains(e.target) && e.target.id !== 'btn-export') {
+        pop.style.display = 'none';
+    }
+}
+function doExportPDF() {
+    document.getElementById('export-popover').style.display = 'none';
+    sendToSwift('exportPDF');
+}
+function doCopyHTML() {
+    document.getElementById('export-popover').style.display = 'none';
+    var html = document.getElementById('content').innerHTML;
+    sendToSwift('copyToClipboard', { text: html });
+}
+function doShare() {
+    document.getElementById('export-popover').style.display = 'none';
+    sendToSwift('share');
+}
+
+// ============================================================
+// Settings panel — build & manage
+// ============================================================
+
+var currentSettings = {};
+
+function buildSettingsHTML(s) {
+    var fonts = [
+        { key: 'serif', name: 'Default (Serif)',
+          en: "'New York', 'Iowan Old Style', Georgia, serif",
+          kr: "'AppleMyungjo', serif",
+          meta: 'New York \u00B7 AppleMyungjo' },
+        { key: 'sans', name: 'Sans',
+          en: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif",
+          kr: "'Apple SD Gothic Neo', sans-serif",
+          meta: 'SF Pro \u00B7 Apple SD Gothic Neo' },
+        { key: 'system', name: 'System',
+          en: "-apple-system, BlinkMacSystemFont, sans-serif",
+          kr: "-apple-system, BlinkMacSystemFont, sans-serif",
+          meta: 'System Default' },
+        { key: 'mono', name: 'Monospace',
+          en: "'SF Mono', Menlo, Consolas, monospace",
+          kr: "'SF Mono', Menlo, monospace",
+          meta: 'SF Mono \u00B7 Menlo' }
+    ];
+
+    var widths = [
+        { key: 'narrow', label: 'Narrow', value: '600px', barW: '30%', pageW: '28px' },
+        { key: 'standard', label: 'Standard', value: '720px', barW: '50%', pageW: '32px' },
+        { key: 'wide', label: 'Wide', value: '900px', barW: '70%', pageW: '36px' },
+        { key: 'full', label: 'Full', value: '\u221E', barW: '90%', pageW: '40px' }
+    ];
+
+    var toggles = [
+        { key: 'autoReload', label: 'Auto-reload on file change' },
+        { key: 'rememberScroll', label: 'Remember scroll position' },
+        { key: 'showTOC', label: 'Show table of contents' },
+        { key: 'showBreadcrumb', label: 'Show breadcrumb path' },
+        { key: 'showWordCount', label: 'Show word count' },
+        { key: 'showProgress', label: 'Show reading progress' },
+        { key: 'enableHighlight', label: 'Syntax highlighting' },
+        { key: 'enableMermaid', label: 'Mermaid diagrams' },
+        { key: 'enableKatex', label: 'KaTeX math rendering' }
+    ];
+
+    var h = '';
+
+    // ── Theme ──
+    h += '<div class="s-section"><div class="s-label">Appearance</div><div class="theme-picker">';
+    ['light','dark','auto'].forEach(function(t) {
+        var sel = s.theme === t ? ' selected' : '';
+        var label = t === 'light' ? 'Light' : t === 'dark' ? 'Dark' : 'Auto';
+        h += '<div class="theme-card' + sel + '" data-theme="' + t + '" onclick="pickTheme(\'' + t + '\')">';
+        h += '<div class="theme-swatch theme-swatch-' + t + '">';
+        if (t !== 'auto') {
+            h += '<div class="sw-line sw-heading" style="width:40%;height:4px;border-radius:2px"></div>';
+            h += '<div class="sw-line" style="width:70%;height:3px;border-radius:2px"></div>';
+            h += '<div class="sw-line" style="width:55%;height:3px;border-radius:2px"></div>';
+        }
+        h += '</div><div class="theme-card-label">' + label + '</div></div>';
+    });
+    h += '</div></div>';
+
+    // ── Fonts ──
+    h += '<div class="s-section"><div class="s-label">Typography</div><div class="font-picker">';
+    fonts.forEach(function(f) {
+        var sel = s.fontFamily === f.key ? ' selected' : '';
+        h += '<div class="font-card' + sel + '" data-font="' + f.key + '" onclick="pickFont(\'' + f.key + '\')">';
+        h += '<div class="font-card-name"><span class="dot"></span> ' + escapeHtml(f.name) + '</div>';
+        h += '<div class="font-card-sample" style="font-family:' + f.en + '">The quick brown fox jumps over the lazy dog</div>';
+        h += '<div class="font-card-sample-kr" style="font-family:' + f.kr + '">\uB2E4\uB78C\uC950 \uD5CC \uCCB3\uBC14\uD034\uC5D0 \uD0C0\uACE0\uD30C</div>';
+        h += '<div class="font-card-meta">' + f.meta + '</div>';
+        h += '</div>';
+    });
+    h += '</div>';
+
+    // Font size
+    h += '<div class="size-row"><span class="size-label">Font Size</span>';
+    h += '<div class="stepper"><button onclick="changeFontSize(-1)">\u2212</button>';
+    h += '<span class="stepper-val" id="sz-val">' + s.fontSize + 'px</span>';
+    h += '<button onclick="changeFontSize(1)">+</button></div></div></div>';
+
+    // ── Width ──
+    h += '<div class="s-section"><div class="s-label">Content Width</div><div class="width-picker">';
+    widths.forEach(function(w) {
+        var sel = s.contentWidth === w.key ? ' selected' : '';
+        h += '<div class="width-card' + sel + '" data-width="' + w.key + '" onclick="pickWidth(\'' + w.key + '\')">';
+        h += '<div class="width-icon"><div class="page" style="width:' + w.pageW + '"><div class="bar" style="width:' + w.barW + '"></div></div></div>';
+        h += '<div class="width-card-label">' + w.label + '</div>';
+        h += '<div class="width-card-value">' + w.value + '</div></div>';
+    });
+    h += '</div></div>';
+
+    // ── Toggles ──
+    h += '<div class="s-section"><div class="s-label">Features</div><div class="toggle-list">';
+    toggles.forEach(function(t) {
+        var checked = s[t.key] ? ' checked' : '';
+        h += '<div class="toggle-row"><span>' + t.label + '</span>';
+        h += '<label class="toggle-switch"><input type="checkbox"' + checked + ' onchange="toggleSetting(\'' + t.key + '\',this.checked)">';
+        h += '<span class="toggle-slider"></span></label></div>';
+    });
+    h += '</div></div>';
+
+    return h;
+}
+
+function toggleSettingsPanel() {
+    var overlay = document.getElementById('settings-overlay');
+    if (overlay.style.display !== 'none') { closeSettingsPanel(); return; }
+    overlay.style.display = '';
+    document.getElementById('settings-body').innerHTML = buildSettingsHTML(currentSettings);
+}
+
+function closeSettingsPanel() {
+    document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function pickTheme(t) {
+    currentSettings.theme = t;
+    sendToSwift('updateSetting', { key: 'theme', value: t });
+    document.querySelectorAll('.theme-card').forEach(function(c) {
+        c.classList.toggle('selected', c.dataset.theme === t);
+    });
+}
+
+function pickFont(f) {
+    currentSettings.fontFamily = f;
+    sendToSwift('updateSetting', { key: 'fontFamily', value: f });
+    document.querySelectorAll('.font-card').forEach(function(c) {
+        c.classList.toggle('selected', c.dataset.font === f);
+    });
+}
+
+function changeFontSize(delta) {
+    var sz = Math.max(12, Math.min(28, (currentSettings.fontSize || 16) + delta));
+    currentSettings.fontSize = sz;
+    sendToSwift('updateSetting', { key: 'fontSize', value: sz });
+    var el = document.getElementById('sz-val');
+    if (el) el.textContent = sz + 'px';
+}
+
+function pickWidth(w) {
+    currentSettings.contentWidth = w;
+    sendToSwift('updateSetting', { key: 'contentWidth', value: w });
+    document.querySelectorAll('.width-card').forEach(function(c) {
+        c.classList.toggle('selected', c.dataset.width === w);
+    });
+}
+
+function toggleSetting(key, val) {
+    currentSettings[key] = val;
+    sendToSwift('updateSetting', { key: key, value: val });
+}
+
+// Override applySettings to also store currentSettings
+var _origApply = applySettings;
+applySettings = function(s) {
+    currentSettings = Object.assign(currentSettings, s);
+    _origApply(s);
+    // Update TOC toolbar button state
+    var tocBtn = document.getElementById('btn-toc');
+    if (tocBtn) tocBtn.classList.toggle('active', !!s.showTOC);
+};
