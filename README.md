@@ -18,9 +18,11 @@ Every developer reads Markdown daily, yet most tools render it either too plainl
 
 ### Navigation
 - **Table of Contents sidebar** — Auto-generated from headings, highlights your current position as you scroll, click to jump (Cmd+Shift+T)
+- **In-app search** — Custom search bar with match highlighting, previous/next navigation, and match count (Cmd+F)
 - **Breadcrumb path bar** — See where you are, click directories to browse sibling files
+- **Folder tree** — Recursive directory browsing in the sidebar, expanding up to 4 levels deep
+- **Bookmarks** — Star icon in toolbar (Cmd+D) to bookmark files, with a dedicated list in the sidebar showing file paths
 - **Back / Forward** — Navigate between linked documents (Cmd+[ / Cmd+])
-- **Sibling file list** — See other `.md` files in the same directory
 - **Reading progress bar** — Thin accent bar at the top shows scroll progress
 
 ### Content Support
@@ -28,27 +30,29 @@ Every developer reads Markdown daily, yet most tools render it either too plainl
 - **Syntax-highlighted code blocks** — 180+ languages via highlight.js, with one-click copy button
 - **Mermaid diagrams** — Flowcharts, sequence diagrams, and more rendered inline
 - **KaTeX math** — LaTeX math expressions: `$E = mc^2$` inline or `$$..$$` display
-- **Local images** — Relative image paths resolved correctly
-- **YAML frontmatter** — Detected and hidden from rendered output
+- **Local images** — Relative image paths resolved correctly, click to zoom
+- **YAML frontmatter** — Parsed and displayed as metadata badges (title, date, author, tags, status)
 
 ### Productivity
 - **Auto-reload** — File changes are detected and the view refreshes automatically (great for editing in another tool)
-- **Export to PDF** — Beautifully formatted A4 PDF with print-optimized styles (Cmd+Shift+E)
+- **Export & Share** — Export popover with PDF export, Copy as HTML, and macOS Share sheet
 - **Source view toggle** — Switch between rendered and raw Markdown (Cmd+U)
 - **Scroll position memory** — Reopen a file and continue where you left off
 - **Word count & reading time** — Shown in the status bar
 - **Recent files** — Quick access from File menu
 
-### Settings
-- **Font family** — Default Serif, Sans, System, or Monospace
-- **Font size** — 12 px to 28 px (also via Cmd+/-)
-- **Content width** — Narrow (600 px), Standard (720 px), Wide (900 px), or Full
-- **Toggle features** — TOC, breadcrumb, word count, progress bar, Mermaid, KaTeX
+### Settings (In-App Modal)
+- **Visual theme picker** — Light/Dark/Auto cards with color swatches
+- **Font family** — Default Serif, Sans, System, or Monospace with live English/Korean preview
+- **Font size** — 12 px to 28 px (toolbar A-/A+ buttons or Cmd+/-)
+- **Content width** — Narrow (600 px), Standard (720 px), Wide (900 px), or Full with miniature page icons
+- **Toggle features** — iOS-style switches for TOC, breadcrumb, word count, progress bar, Mermaid, KaTeX, syntax highlighting
 
 ### macOS Integration
 - **Finder double-click** — Set as default app for `.md` files
+- **Drag and drop** — Drop `.md` files from Finder onto the window to open
 - **Native tabs** — Multiple documents in tabbed windows
-- **Standard shortcuts** — Cmd+O, Cmd+P, Cmd+W, Cmd+F, and more
+- **Standard shortcuts** — Cmd+O, Cmd+P, Cmd+W, Cmd+F, Cmd+D, and more
 - **Represented filename** — Cmd+click the title bar to see the file path in Finder
 - **Ad-hoc signed** — No Gatekeeper warnings on first launch
 
@@ -65,7 +69,7 @@ Every developer reads Markdown daily, yet most tools render it either too plainl
 Requires macOS 13+ and Xcode Command Line Tools.
 
 ```bash
-git clone https://github.com/gregy/markdown-reader.git
+git clone https://github.com/gspain89/markdown-reader.git
 cd markdown-reader
 
 # Download vendor libraries (marked.js, highlight.js, mermaid.js, KaTeX)
@@ -92,25 +96,25 @@ bash scripts/create-dmg.sh
 ┌─────────────────────────────────────────────────┐
 │  macOS Native Shell (Swift / AppKit)            │
 │  ┌───────────────────────────────────────────┐  │
-│  │  NSWindow + NSToolbar                     │  │
+│  │  NSWindow (tabs) + DropView (drag&drop)   │  │
 │  │  ┌─────────────────────────────────────┐  │  │
 │  │  │  WKWebView                          │  │  │
 │  │  │  ┌──────────┐ ┌──────────────────┐  │  │  │
-│  │  │  │ TOC      │ │ Rendered         │  │  │  │
-│  │  │  │ Sidebar  │ │ Markdown         │  │  │  │
-│  │  │  │          │ │                  │  │  │  │
-│  │  │  │ marked.js│ │ Claude-style CSS │  │  │  │
-│  │  │  │ hljs     │ │ + highlight.js   │  │  │  │
-│  │  │  │ mermaid  │ │ + mermaid        │  │  │  │
+│  │  │  │ Sidebar  │ │ Rendered         │  │  │  │
+│  │  │  │ ─ TOC    │ │ Markdown         │  │  │  │
+│  │  │  │ ─ ★ Fav  │ │                  │  │  │  │
+│  │  │  │ ─ Files  │ │ Claude-style CSS │  │  │  │
+│  │  │  │          │ │ + highlight.js   │  │  │  │
+│  │  │  │ marked.js│ │ + mermaid        │  │  │  │
 │  │  │  │ KaTeX    │ │ + KaTeX          │  │  │  │
 │  │  │  └──────────┘ └──────────────────┘  │  │  │
 │  │  └─────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────┘  │
-│  Settings (AppKit) │ FileWatcher (GCD)          │
+│  Settings (in-app modal) │ FileWatcher (GCD)    │
 └─────────────────────────────────────────────────┘
 ```
 
-- **Swift layer** — Window management, menus, file I/O, settings persistence (`UserDefaults`), file change detection (`DispatchSource`)
+- **Swift layer** — Window management, menus, file I/O, bookmarks, settings persistence (`UserDefaults`), file change detection (`DispatchSource`), folder tree scanning
 - **Web layer** — All rendering via `WKWebView` with custom HTML/CSS/JS. Communication between layers via `WKScriptMessageHandler`
 - **Zero pip/npm dependencies** — vendor JS libraries are downloaded once via `setup.sh` and bundled into the `.app`
 
@@ -119,19 +123,20 @@ bash scripts/create-dmg.sh
 | Shortcut | Action |
 |----------|--------|
 | Cmd+O | Open file |
+| Cmd+F | Find in document |
+| Cmd+D | Toggle bookmark |
 | Cmd+Shift+T | Toggle table of contents |
 | Cmd+U | Toggle source view |
 | Cmd+Shift+E | Export as PDF |
 | Cmd+P | Print |
-| Cmd+F | Find in document |
 | Cmd++ | Zoom in |
 | Cmd+- | Zoom out |
 | Cmd+0 | Reset zoom |
 | Cmd+\\ | Cycle content width |
 | Cmd+[ | Navigate back |
 | Cmd+] | Navigate forward |
-| Cmd+W | Close window |
 | Cmd+, | Settings |
+| Cmd+W | Close window/tab |
 
 ## Content Width
 
