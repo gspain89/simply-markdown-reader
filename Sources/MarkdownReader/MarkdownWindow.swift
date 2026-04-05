@@ -1,6 +1,42 @@
 import Cocoa
 import WebKit
 
+// Drop target view — accepts .md files dragged from Finder
+final class DropView: NSView {
+    var onDrop: ((String) -> Void)?
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL])
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard let urls = sender.draggingPasteboard.readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL], urls.contains(where: { Self.mdExts.contains($0.pathExtension.lowercased()) }) else {
+            return []
+        }
+        return .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL] else { return false }
+
+        for url in urls {
+            if Self.mdExts.contains(url.pathExtension.lowercased()) {
+                onDrop?(url.path)
+                return true
+            }
+        }
+        return false
+    }
+
+    private static let mdExts: Set<String> = ["md", "markdown", "mdown", "mkd", "mdx"]
+}
+
 final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
 
     let window: NSWindow
@@ -44,8 +80,20 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         ucc.add(self, name: "app")
 
         webView.navigationDelegate = self
+
+        // Wrap WKWebView in DropView for Finder drag-and-drop support
+        let dropView = DropView(frame: .zero)
+        dropView.translatesAutoresizingMaskIntoConstraints = false
         webView.translatesAutoresizingMaskIntoConstraints = false
-        w.contentView = webView
+        dropView.addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: dropView.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: dropView.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: dropView.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: dropView.trailingAnchor)
+        ])
+        dropView.onDrop = { [weak self] path in self?.loadFile(path: path) }
+        w.contentView = dropView
 
         // Observe settings changes
         NotificationCenter.default.addObserver(
@@ -123,7 +171,7 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         self.filePath = resolvedPath
         Settings.shared.addRecentFile(resolvedPath)
 
-        window.title = URL(fileURLWithPath: resolvedPath).lastPathComponent
+        window.title = URL(fileURLWithPath: resolvedPath).lastPathComponent.precomposedStringWithCanonicalMapping
         window.representedFilename = resolvedPath
 
         guard let content = try? String(contentsOfFile: resolvedPath, encoding: .utf8) else { return }
@@ -163,6 +211,7 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         guard let items = try? FileManager.default.contentsOfDirectory(atPath: dir) else { return }
         let mdFiles = items.filter { $0.hasSuffix(".md") || $0.hasSuffix(".markdown") || $0.hasSuffix(".mdx") }
             .sorted()
+            .map { $0.precomposedStringWithCanonicalMapping } // NFD → NFC for Korean
         guard let data = try? JSONSerialization.data(withJSONObject: mdFiles),
               let json = String(data: data, encoding: .utf8) else { return }
         let dirEscaped = escapeForJS(dir)
@@ -267,8 +316,8 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             if let path = self.filePath {
                 self.loadFile(path: path)
             } else {
-                // Show welcome with recent files
-                let recent = Settings.shared.recentFiles
+                // Show welcome with recent files (NFC-normalized for Korean)
+                let recent = Settings.shared.recentFiles.map { $0.precomposedStringWithCanonicalMapping }
                 if let data = try? JSONSerialization.data(withJSONObject: recent),
                    let json = String(data: data, encoding: .utf8) {
                     webView.evaluateJavaScript("showWelcome(\(json));", completionHandler: nil)
@@ -328,7 +377,9 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
     // MARK: - Helpers
 
     private func escapeForJS(_ str: String) -> String {
-        let data = try! JSONSerialization.data(withJSONObject: str, options: .fragmentsAllowed)
+        // Normalize NFD → NFC so Korean filenames render correctly (macOS FS uses NFD)
+        let normalized = str.precomposedStringWithCanonicalMapping
+        let data = try! JSONSerialization.data(withJSONObject: normalized, options: .fragmentsAllowed)
         return String(data: data, encoding: .utf8)!
     }
 }
