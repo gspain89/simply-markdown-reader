@@ -69,8 +69,8 @@ Every developer reads Markdown daily, yet most tools render it either too plainl
 Requires macOS 13+ and Xcode Command Line Tools.
 
 ```bash
-git clone https://github.com/gspain89/markdown-reader.git
-cd markdown-reader
+git clone https://github.com/gspain89/simply-markdown-reader.git
+cd simply-markdown-reader
 
 # Download vendor libraries (marked.js, highlight.js, mermaid.js, KaTeX)
 bash scripts/setup.sh

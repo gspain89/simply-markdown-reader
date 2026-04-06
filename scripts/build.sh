@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 APP_NAME="Markdown Reader"
-BUNDLE_ID="com.gregy.markdown-reader"
+BUNDLE_ID="com.gregy.simply-markdown-reader"
 VERSION="1.0.0"
 
 echo "=== Building Markdown Reader ==="
@@ -64,7 +64,7 @@ cat > "$APP_DIR/Info.plist" << 'PLIST'
     <key>CFBundleDisplayName</key>
     <string>Markdown Reader</string>
     <key>CFBundleIdentifier</key>
-    <string>com.gregy.markdown-reader</string>
+    <string>com.gregy.simply-markdown-reader</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
