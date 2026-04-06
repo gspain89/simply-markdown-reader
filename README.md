@@ -11,8 +11,8 @@ Warm light/dark themes with serif body text and clean heading typography. Opens 
 ### Download (recommended)
 
 1. Grab `MarkdownReader-1.0.0.dmg` from the [Releases](../../releases) page
-2. Open the DMG and drag **Markdown Reader** to Applications
-3. To set as default: right-click any `.md` file → Get Info → Open with → **Markdown Reader** → **Change All**
+2. Open the DMG and drag **Simply Markdown Reader** to Applications
+3. To set as default: right-click any `.md` file → Get Info → Open with → **Simply Markdown Reader** → **Change All**
 
 ### Build from source
 
@@ -23,9 +23,9 @@ git clone https://github.com/gspain89/simply-markdown-reader.git
 cd simply-markdown-reader
 
 bash scripts/setup.sh    # download vendor JS (marked, highlight.js, mermaid, KaTeX)
-bash scripts/build.sh    # build .app bundle → dist/Markdown Reader.app
+bash scripts/build.sh    # build .app bundle → dist/Simply Markdown Reader.app
 
-cp -r "dist/Markdown Reader.app" /Applications/
+cp -r "dist/Simply Markdown Reader.app" /Applications/
 ```
 
 ## Features

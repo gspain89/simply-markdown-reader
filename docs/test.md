@@ -1,6 +1,6 @@
 # Test Document
 
-This is a **test** markdown file for *Markdown Reader*.
+This is a **test** markdown file for *Simply Markdown Reader*.
 
 ## Features
 

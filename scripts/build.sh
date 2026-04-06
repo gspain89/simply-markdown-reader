@@ -1,13 +1,13 @@
 #!/bin/bash
-# Build Markdown Reader.app bundle
+# Build Simply Markdown Reader.app bundle
 set -e
 cd "$(dirname "$0")/.."
 
-APP_NAME="Markdown Reader"
+APP_NAME="Simply Markdown Reader"
 BUNDLE_ID="com.gregy.simply-markdown-reader"
 VERSION="1.0.0"
 
-echo "=== Building Markdown Reader ==="
+echo "=== Building Simply Markdown Reader ==="
 
 # 1. Check vendor libraries
 if [ ! -f "Resources/vendor/marked.min.js" ]; then
@@ -60,9 +60,9 @@ cat > "$APP_DIR/Info.plist" << 'PLIST'
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Markdown Reader</string>
+    <string>Simply Markdown Reader</string>
     <key>CFBundleDisplayName</key>
-    <string>Markdown Reader</string>
+    <string>Simply Markdown Reader</string>
     <key>CFBundleIdentifier</key>
     <string>com.gregy.simply-markdown-reader</string>
     <key>CFBundleVersion</key>
@@ -144,4 +144,4 @@ echo "To install:"
 echo "  cp -r \"$DIST/${APP_NAME}.app\" /Applications/"
 echo ""
 echo "To set as default .md viewer:"
-echo "  Right-click any .md file → Get Info → Open with → Markdown Reader → Change All"
+echo "  Right-click any .md file → Get Info → Open with → Simply Markdown Reader → Change All"

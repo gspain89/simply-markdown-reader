@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-APP_NAME="Markdown Reader"
+APP_NAME="Simply Markdown Reader"
 VERSION="1.0.0"
 DMG_NAME="MarkdownReader-${VERSION}"
 

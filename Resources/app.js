@@ -1,5 +1,5 @@
 /* ============================================================
-   Markdown Reader — Application JavaScript
+   Simply Markdown Reader — Application JavaScript
    Handles rendering, TOC, navigation, and Swift bridge
    ============================================================ */
 
@@ -484,7 +484,7 @@ function showWelcome(recentFiles) {
 
     contentEl.innerHTML = '<div class="welcome">'
         + '<div class="welcome-icon">MD</div>'
-        + '<h1>Markdown Reader</h1>'
+        + '<h1>Simply Markdown Reader</h1>'
         + '<p>Open a Markdown file to get started</p>'
         + '<p class="welcome-hint">Double-click a .md file in Finder, or use File \u2192 Open (\u2318O)</p>'
         + recentHTML
