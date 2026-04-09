@@ -10,7 +10,8 @@ const state = {
     rawMarkdown: '',
     isSourceView: false,
     siblingFiles: [],
-    siblingDir: ''
+    siblingDir: '',
+    bookmarks: []
 };
 
 // --- Font presets ---
@@ -117,6 +118,13 @@ function render(markdown, filePath, baseDir) {
     processMermaid();
     processKatex();
     setupScrollTracking();
+
+    // Scroll sidebar to top so TOC is visible
+    var sidebar = document.getElementById('toc-sidebar');
+    if (sidebar) sidebar.scrollTop = 0;
+
+    // Re-render bookmark highlighting for the new file
+    renderBookmarkList();
 }
 
 // Called on file-change auto-reload (preserves scroll position)
@@ -588,6 +596,10 @@ function sendToSwift(type, data) {
 
 function toggleTOCFromToolbar() {
     sendToSwift('toggleTOC');
+}
+
+function doRefresh() {
+    sendToSwift('reloadFile');
 }
 
 // ============================================================
@@ -1151,11 +1163,17 @@ function updateBookmarkState(isBookmarked) {
 }
 
 function setBookmarks(bookmarks) {
+    state.bookmarks = bookmarks || [];
+    renderBookmarkList();
+}
+
+function renderBookmarkList() {
+    var bookmarks = state.bookmarks || [];
     var section = document.getElementById('bookmark-section');
     var list = document.getElementById('bookmark-list');
     list.innerHTML = '';
 
-    if (!bookmarks || bookmarks.length === 0) {
+    if (bookmarks.length === 0) {
         section.style.display = 'none';
         return;
     }

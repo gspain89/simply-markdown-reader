@@ -120,6 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // View menu
         let viewMenuItem = NSMenuItem()
         let viewMenu = NSMenu(title: "View")
+        viewMenu.addItem(withTitle: "Reload File", action: #selector(reloadFile), keyEquivalent: "r")
         viewMenu.addItem(withTitle: "Toggle Table of Contents", action: #selector(toggleTOC), keyEquivalent: "t")
             .keyEquivalentModifierMask = [.command, .shift]
         viewMenu.addItem(withTitle: "Toggle Source View", action: #selector(toggleSource), keyEquivalent: "u")
@@ -217,6 +218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleBookmark() {
         activeWindowController()?.webView.evaluateJavaScript("sendToSwift('toggleBookmark');", completionHandler: nil)
     }
+    @objc private func reloadFile() { activeWindowController()?.reloadCurrentFile() }
     @objc private func toggleTOC() { activeWindowController()?.toggleTOC() }
     @objc private func toggleSource() { activeWindowController()?.toggleSource() }
     @objc private func zoomIn() { activeWindowController()?.zoomIn() }

@@ -217,7 +217,7 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         }
     }
 
-    private func reloadCurrentFile() {
+    func reloadCurrentFile() {
         guard let path = filePath,
               let content = try? String(contentsOfFile: path, encoding: .utf8) else { return }
         let escaped = escapeForJS(content)
@@ -515,6 +515,8 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             toggleBookmark()
         case "requestBookmarks":
             sendBookmarks()
+        case "reloadFile":
+            reloadCurrentFile()
         case "log":
             if let msg = body["message"] as? String {
                 NSLog("WebView: %@", msg)
