@@ -39,11 +39,6 @@ final class Settings {
         set { defaults.set(newValue, forKey: "autoReload"); notify() }
     }
 
-    var rememberScroll: Bool {
-        get { defaults.object(forKey: "rememberScroll") as? Bool ?? true }
-        set { defaults.set(newValue, forKey: "rememberScroll"); notify() }
-    }
-
     var showTOC: Bool {
         get { defaults.object(forKey: "showTOC") as? Bool ?? false }
         set { defaults.set(newValue, forKey: "showTOC"); notify() }
@@ -117,16 +112,6 @@ final class Settings {
         files.insert(path, at: 0)
         if files.count > 20 { files = Array(files.prefix(20)) }
         recentFiles = files
-    }
-
-    // MARK: - Scroll positions
-
-    func scrollPosition(for path: String) -> Double {
-        defaults.double(forKey: "scroll_\(path.hashValue)")
-    }
-
-    func setScrollPosition(_ position: Double, for path: String) {
-        defaults.set(position, forKey: "scroll_\(path.hashValue)")
     }
 
     // MARK: - Serialization for JS bridge

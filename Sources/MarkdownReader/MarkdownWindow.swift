@@ -451,16 +451,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
 
             // Send bookmarks to sidebar
             self.sendBookmarks()
-
-            // Restore scroll position
-            if let path = self.filePath, Settings.shared.rememberScroll {
-                let pos = Settings.shared.scrollPosition(for: path)
-                if pos > 0 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        webView.evaluateJavaScript("setScrollPosition(\(pos));", completionHandler: nil)
-                    }
-                }
-            }
         }
     }
 
@@ -484,10 +474,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             if let text = body["text"] as? String {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(text, forType: .string)
-            }
-        case "saveScrollPosition":
-            if let pos = body["position"] as? Double, let path = filePath {
-                Settings.shared.setScrollPosition(pos, for: path)
             }
         case "browseDirectory":
             if let dir = body["path"] as? String {
@@ -536,7 +522,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         case "fontSize":    if let v = value as? Int { s.fontSize = v }
         case "contentWidth": if let v = value as? String { s.contentWidth = v }
         case "autoReload":  if let v = value as? Bool { s.autoReload = v }
-        case "rememberScroll": if let v = value as? Bool { s.rememberScroll = v }
         case "showTOC":     if let v = value as? Bool { s.showTOC = v }
         case "showBreadcrumb": if let v = value as? Bool { s.showBreadcrumb = v }
         case "showWordCount": if let v = value as? Bool { s.showWordCount = v }

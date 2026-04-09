@@ -119,6 +119,9 @@ function render(markdown, filePath, baseDir) {
     processKatex();
     setupScrollTracking();
 
+    // Always start from top when opening a file
+    window.scrollTo(0, 0);
+
     // Scroll sidebar to top so TOC is visible
     var sidebar = document.getElementById('toc-sidebar');
     if (sidebar) sidebar.scrollTop = 0;
@@ -273,8 +276,6 @@ function updateWordCount(text) {
 // Scroll tracking & progress bar
 // ============================================================
 
-let scrollDebounceTimer = null;
-
 function setupScrollTracking() {
     window.removeEventListener('scroll', onScroll);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -289,21 +290,6 @@ function onScroll() {
 
     // Active TOC
     updateActiveTOC();
-
-    // Save scroll position (debounced)
-    clearTimeout(scrollDebounceTimer);
-    scrollDebounceTimer = setTimeout(function() {
-        if (state.filePath) {
-            const pos = document.documentElement.scrollHeight > 0
-                ? window.scrollY / document.documentElement.scrollHeight : 0;
-            sendToSwift('saveScrollPosition', { position: pos });
-        }
-    }, 500);
-}
-
-function setScrollPosition(pos) {
-    const target = pos * document.documentElement.scrollHeight;
-    window.scrollTo(0, target);
 }
 
 // ============================================================
@@ -681,7 +667,6 @@ function buildSettingsHTML(s) {
 
     var toggles = [
         { key: 'autoReload', label: 'Auto-reload on file change' },
-        { key: 'rememberScroll', label: 'Remember scroll position' },
         { key: 'showTOC', label: 'Show table of contents' },
         { key: 'showBreadcrumb', label: 'Show breadcrumb path' },
         { key: 'showWordCount', label: 'Show word count' },
