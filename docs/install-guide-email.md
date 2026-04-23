@@ -10,7 +10,7 @@
 
 ### 1. 설치
 
-첨부된 **SimplyMarkdownReader-1.0.2.dmg** 파일을 열어주세요.
+첨부된 **SimplyMarkdownReader-1.0.3.dmg** 파일을 열어주세요.
 
 1. DMG 파일을 더블클릭합니다
 2. 열리는 창에서 **Simply Markdown Reader** 아이콘을 **Applications** 폴더로 드래그합니다

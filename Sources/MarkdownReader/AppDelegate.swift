@@ -184,7 +184,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showAbout() {
         let alert = NSAlert()
         alert.messageText = "Simply Markdown Reader"
-        alert.informativeText = "A native macOS Markdown viewer\nwith warm, readable styling.\n\nVersion 1.0.2"
+        alert.informativeText = "A native macOS Markdown viewer\nwith warm, readable styling.\n\nVersion 1.0.3"
         alert.alertStyle = .informational
         alert.runModal()
     }

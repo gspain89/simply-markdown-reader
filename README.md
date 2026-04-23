@@ -10,7 +10,7 @@ Warm light/dark themes with serif body text and clean heading typography. Opens 
 
 ### Download (recommended)
 
-1. Grab `SimplyMarkdownReader-1.0.2.dmg` from the [Releases](../../releases) page
+1. Grab `SimplyMarkdownReader-1.0.3.dmg` from the [Releases](../../releases) page
 2. Open the DMG and drag **Simply Markdown Reader** to Applications
 3. To set as default: right-click any `.md` file → Get Info → Open with → **Simply Markdown Reader** → **Change All**
 

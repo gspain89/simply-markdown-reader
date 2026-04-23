@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Simply Markdown Reader"
 BUNDLE_ID="com.gregy.simply-markdown-reader"
-VERSION="1.0.2"
+VERSION="1.0.3"
 
 echo "=== Building Simply Markdown Reader ==="
 
@@ -66,9 +66,9 @@ cat > "$APP_DIR/Info.plist" << 'PLIST'
     <key>CFBundleIdentifier</key>
     <string>com.gregy.simply-markdown-reader</string>
     <key>CFBundleVersion</key>
-    <string>1.0.2</string>
+    <string>1.0.3</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.2</string>
+    <string>1.0.3</string>
     <key>CFBundleExecutable</key>
     <string>MarkdownReader</string>
     <key>CFBundlePackageType</key>
