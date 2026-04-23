@@ -85,7 +85,12 @@
             <nav id="bookmark-list" class="toc-list"></nav>
         </div>
         <div id="file-list-section" class="file-list-section" style="display:none">
-            <div class="toc-header"><span class="toc-title">Files</span></div>
+            <div class="toc-header">
+                <span class="toc-title">Files</span>
+                <button class="files-parent-btn" id="files-parent-btn" onclick="goToParentFolder()" title="Parent folder">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 9 L8 5 L12 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
             <nav id="file-list" class="toc-list"></nav>
         </div>
     </aside>

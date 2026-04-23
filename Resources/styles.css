@@ -514,12 +514,31 @@ mark.search-hl.current {
 .toc-sidebar.visible { transform: translateX(0); }
 
 .toc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 10px 16px 6px;
     font-size: 11px;
     font-weight: 600;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+.files-parent-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+}
+.files-parent-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 .toc-list { list-style: none; margin: 0; padding: 0; }
 .toc-list a {

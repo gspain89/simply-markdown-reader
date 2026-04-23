@@ -151,14 +151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)
 
-        // Go menu
-        let goMenuItem = NSMenuItem()
-        let goMenu = NSMenu(title: "Go")
-        goMenu.addItem(withTitle: "Back", action: #selector(goBack), keyEquivalent: "[")
-        goMenu.addItem(withTitle: "Forward", action: #selector(goForward), keyEquivalent: "]")
-        goMenuItem.submenu = goMenu
-        mainMenu.addItem(goMenuItem)
-
         // Window menu
         let windowMenuItem = NSMenuItem()
         let windowMenu = NSMenu(title: "Window")
@@ -243,6 +235,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func zoomOut() { activeWindowController()?.zoomOut() }
     @objc private func resetZoom() { activeWindowController()?.resetZoom() }
     @objc private func toggleWidth() { activeWindowController()?.toggleContentWidth() }
-    @objc private func goBack() { activeWindowController()?.goBack() }
-    @objc private func goForward() { activeWindowController()?.goForward() }
 }

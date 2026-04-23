@@ -1086,6 +1086,18 @@ function setFolderTree(tree, rootDir) {
     // Change header to "Files"
     section.style.display = '';
     list.innerHTML = renderFolderNode(tree, rootDir, 0);
+
+    // Hide parent button only at filesystem root
+    var btn = document.getElementById('files-parent-btn');
+    if (btn) btn.style.display = (rootDir && rootDir !== '/') ? '' : 'none';
+}
+
+function goToParentFolder() {
+    var root = folderTreeState.root;
+    if (!root || root === '/') return;
+    var trimmed = root.replace(/\/+$/, '');
+    var parent = trimmed.substring(0, trimmed.lastIndexOf('/')) || '/';
+    sendToSwift('browseDirectory', { path: parent });
 }
 
 function renderFolderNode(node, currentPath, depth) {

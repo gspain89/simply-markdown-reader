@@ -50,9 +50,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
     private var dropOverlay: DropOverlay!
     private(set) var filePath: String?
     private var fileWatcher: FileWatcher?
-    private var navigationHistory: [String] = []
-    private var historyIndex: Int = -1
-    private var isNavigatingHistory = false
     private var exportOverlay: NSView?
 
     // MARK: - Initialization
@@ -172,15 +169,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
 
         guard FileManager.default.fileExists(atPath: resolvedPath) else { return }
 
-        // Update navigation history
-        if !isNavigatingHistory {
-            if historyIndex < navigationHistory.count - 1 {
-                navigationHistory = Array(navigationHistory.prefix(historyIndex + 1))
-            }
-            navigationHistory.append(resolvedPath)
-            historyIndex = navigationHistory.count - 1
-        }
-
         self.filePath = resolvedPath
         Settings.shared.addRecentFile(resolvedPath)
 
@@ -273,24 +261,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
               let json = String(data: data, encoding: .utf8) else { return }
         let rootEscaped = escapeForJS(root)
         webView.evaluateJavaScript("setFolderTree(\(json), \(rootEscaped));", completionHandler: nil)
-    }
-
-    // MARK: - Navigation
-
-    func goBack() {
-        guard historyIndex > 0 else { return }
-        historyIndex -= 1
-        isNavigatingHistory = true
-        loadFile(path: navigationHistory[historyIndex])
-        isNavigatingHistory = false
-    }
-
-    func goForward() {
-        guard historyIndex < navigationHistory.count - 1 else { return }
-        historyIndex += 1
-        isNavigatingHistory = true
-        loadFile(path: navigationHistory[historyIndex])
-        isNavigatingHistory = false
     }
 
     // MARK: - Actions
@@ -487,10 +457,6 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
             }
         case "toggleTOC":
             toggleTOC()
-        case "goBack":
-            goBack()
-        case "goForward":
-            goForward()
         case "exportPDF":
             exportPDF()
         case "share":
