@@ -464,7 +464,9 @@ final class MarkdownWindowController: NSObject, WKNavigationDelegate, WKScriptMe
         switch type {
         case "openFile":
             if let path = body["path"] as? String {
-                loadFile(path: path)
+                // Route through AppDelegate so the file opens in a new tab,
+                // keeping the current document in its existing tab.
+                (NSApp.delegate as? AppDelegate)?.openFilePath(path)
             }
         case "openExternal":
             if let urlStr = body["url"] as? String, let url = URL(string: urlStr) {

@@ -44,6 +44,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openFileInWindow(path: String) {
+        // If this file is already open in a visible tab, focus it instead of
+        // creating a duplicate. Normalize paths (resolve `.`/`..`, NFC) so
+        // e.g. `/foo/./bar.md` matches `/foo/bar.md`, and NFD-decomposed
+        // Korean filenames match their NFC form.
+        let normalizedTarget = normalizedPath(path)
+        if let existing = windowControllers.first(where: { wc in
+            guard wc.window.isVisible, let p = wc.filePath else { return false }
+            return normalizedPath(p) == normalizedTarget
+        }) {
+            existing.window.makeKeyAndOrderFront(nil)
+            return
+        }
+
         // Reuse the welcome window if it has no file
         if let existing = windowControllers.first(where: { $0.filePath == nil }) {
             existing.loadFile(path: path)
@@ -58,6 +71,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             existingWindow.addTabbedWindow(wc.window, ordered: .above)
         }
         wc.window.makeKeyAndOrderFront(nil)
+    }
+
+    private func normalizedPath(_ path: String) -> String {
+        URL(fileURLWithPath: path).standardizedFileURL.path
+            .precomposedStringWithCanonicalMapping
     }
 
     private func activeWindowController() -> MarkdownWindowController? {
